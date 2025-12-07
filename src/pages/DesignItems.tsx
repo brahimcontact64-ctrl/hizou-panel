@@ -1,5 +1,5 @@
 // ============================================
-//  DesignItems.tsx — FULLY EDITABLE VERSION
+//  DesignItems.tsx — FINAL FULLY EDITABLE VERSION
 // ============================================
 
 import { useState, useEffect } from 'react';
@@ -11,7 +11,7 @@ import {
   query,
   orderBy,
   doc,
-  updateDoc
+  updateDoc,
 } from "firebase/firestore";
 
 import {
@@ -19,7 +19,7 @@ import {
   uploadBytes,
   getDownloadURL,
   listAll,
-  deleteObject
+  deleteObject,
 } from "firebase/storage";
 
 import { db, storage } from "../services/firebase";
@@ -50,12 +50,12 @@ export default function DesignItems() {
     "businessCard",
     "book",
     "rollup",
-    "packaging"
+    "packaging",
   ];
 
-  // -----------------------------
-  // Load Items
-  // -----------------------------
+  // --------------------------------
+  // Load All Items
+  // --------------------------------
   const loadItems = async () => {
     if (!sectionId) return;
 
@@ -68,8 +68,8 @@ export default function DesignItems() {
 
     const arr: DesignItem[] = snapshot.docs.map((d) => ({
       id: d.id,
-      ...d.data()
-    })) as DesignItem[];
+      ...(d.data() as any),
+    }));
 
     setItems(arr);
     loadAllImages(arr);
@@ -79,9 +79,9 @@ export default function DesignItems() {
     loadItems();
   }, [sectionId]);
 
-  // -----------------------------
-  // Load Images for each Item
-  // -----------------------------
+  // --------------------------------
+  // Load images for each item
+  // --------------------------------
   const loadAllImages = async (itemsArr: DesignItem[]) => {
     const result: Record<string, string[]> = {};
 
@@ -103,9 +103,9 @@ export default function DesignItems() {
     setImagesByItem(result);
   };
 
-  // -----------------------------
+  // --------------------------------
   // Save Edited Item
-  // -----------------------------
+  // --------------------------------
   const saveItem = async (sectionId: string, item: DesignItem) => {
     setSavingId(item.id);
 
@@ -114,15 +114,15 @@ export default function DesignItems() {
     await updateDoc(itemRef, {
       label: item.label,
       galleryKey: item.galleryKey,
-      order: item.order
+      order: item.order,
     });
 
     setSavingId(null);
   };
 
-  // -----------------------------
-  // Upload New Image
-  // -----------------------------
+  // --------------------------------
+  // Upload Image
+  // --------------------------------
   const uploadImage = async (item: DesignItem, file: File) => {
     const fileRef = ref(
       storage,
@@ -133,10 +133,10 @@ export default function DesignItems() {
     await loadItems();
   };
 
-  // -----------------------------
+  // --------------------------------
   // Delete Image
-  // -----------------------------
-  const deleteImage = async (item: DesignItem, imageUrl: string) => {
+  // --------------------------------
+  const deleteImage = async (_item: DesignItem, imageUrl: string) => {
     const clean = decodeURIComponent(imageUrl.split("?")[0]);
     const fullPath = clean.split("/o/")[1].replace(/%2F/g, "/");
 
@@ -144,12 +144,11 @@ export default function DesignItems() {
     await loadItems();
   };
 
-  // -----------------------------
+  // --------------------------------
   // Render Page
-  // -----------------------------
+  // --------------------------------
   return (
     <div className="p-6">
-
       <Link to="/design" className="text-orange-600 flex items-center mb-6 font-semibold">
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Design Sections
       </Link>
@@ -160,7 +159,7 @@ export default function DesignItems() {
         {items.map((item) => (
           <div key={item.id} className="bg-white p-5 shadow rounded-2xl">
 
-            {/* Editable Label */}
+            {/* Editable Label FR */}
             <div className="mb-4">
               <label className="font-semibold">Name (FR):</label>
               <input
@@ -178,6 +177,7 @@ export default function DesignItems() {
               />
             </div>
 
+            {/* Editable Label AR */}
             <div className="mb-4">
               <label className="font-semibold">Name (AR):</label>
               <input
@@ -195,6 +195,7 @@ export default function DesignItems() {
               />
             </div>
 
+            {/* Editable Label EN */}
             <div className="mb-4">
               <label className="font-semibold">Name (EN):</label>
               <input
@@ -262,7 +263,7 @@ export default function DesignItems() {
               {savingId === item.id ? "Saving…" : "Save Changes"}
             </button>
 
-            {/* Images */}
+            {/* Images Grid */}
             <div className="grid grid-cols-3 gap-2 mt-4">
               {imagesByItem[item.id]?.map((src, i) => (
                 <div className="relative group" key={i}>
@@ -297,7 +298,7 @@ export default function DesignItems() {
         ))}
       </div>
 
-      {/* Image Modal */}
+      {/* Image Preview Modal */}
       {previewImage && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center"

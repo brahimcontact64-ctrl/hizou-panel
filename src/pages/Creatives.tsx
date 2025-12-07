@@ -1,5 +1,5 @@
 // ===============================
-// Creatives.tsx — FINAL VERSION
+// Creatives.tsx — FIXED VERSION
 // ===============================
 
 import React, { useEffect, useState } from "react";
@@ -22,7 +22,7 @@ import { useNavigate } from "react-router-dom";
 // TYPES
 // ----------------------------
 interface CreativeCategory {
-  id: string; // Firestore document ID
+  id: string;
   labelKey: string;
   order: number;
   folder: string;
@@ -51,9 +51,6 @@ const Creatives: React.FC = () => {
 
   const navigate = useNavigate();
 
-  // ----------------------------
-  // LOAD CATEGORIES
-  // ----------------------------
   const fetchCategories = async () => {
     try {
       setLoading(true);
@@ -62,7 +59,7 @@ const Creatives: React.FC = () => {
       const snap = await getDocs(q);
 
       const list = snap.docs.map((d) => ({
-        id: d.id, // Firestore ID
+        id: d.id,
         ...(d.data() as any),
       }));
 
@@ -78,9 +75,6 @@ const Creatives: React.FC = () => {
     fetchCategories();
   }, []);
 
-  // ----------------------------
-  // RESET FORM
-  // ----------------------------
   const resetForm = () => {
     setFormData({
       labelKey: "",
@@ -90,14 +84,10 @@ const Creatives: React.FC = () => {
       ar: "",
       en: "",
     });
-
     setEditingId(null);
     setShowForm(false);
   };
 
-  // ----------------------------
-  // SAVE (ADD or UPDATE)
-// ----------------------------
   const handleSave = async () => {
     if (!formData.labelKey.trim() || !formData.folder.trim()) {
       alert("Please fill all fields.");
@@ -108,7 +98,7 @@ const Creatives: React.FC = () => {
 
     const payload = {
       labelKey: formData.labelKey.trim(),
-      order: Number(formData.order),
+      order: Number(formData.order), // ✅ FIXED HERE
       folder: formData.folder.trim().toLowerCase(),
       title: {
         fr: formData.fr,
@@ -119,10 +109,8 @@ const Creatives: React.FC = () => {
 
     try {
       if (editingId) {
-        // UPDATE (Note: no id field!)
         await updateDoc(doc(db, "creativeCategories", editingId), payload);
       } else {
-        // ADD NEW
         await addDoc(collection(db, "creativeCategories"), payload);
       }
 
@@ -136,9 +124,6 @@ const Creatives: React.FC = () => {
     }
   };
 
-  // ----------------------------
-  // EDIT BUTTON
-  // ----------------------------
   const handleEdit = (cat: CreativeCategory) => {
     setFormData({
       labelKey: cat.labelKey,
@@ -153,9 +138,6 @@ const Creatives: React.FC = () => {
     setShowForm(true);
   };
 
-  // ----------------------------
-  // DELETE CATEGORY
-  // ----------------------------
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this category?")) return;
 
@@ -168,9 +150,6 @@ const Creatives: React.FC = () => {
     }
   };
 
-  // ----------------------------
-  // RENDER UI
-  // ----------------------------
   return (
     <div className="p-6">
       {/* HEADER */}
@@ -244,7 +223,7 @@ const Creatives: React.FC = () => {
           <div className="flex flex-col gap-4">
             <input
               type="text"
-              placeholder="Label key (e.g. creatives.item1)"
+              placeholder="Label key"
               className="border p-2 rounded"
               value={formData.labelKey}
               onChange={(e) => setFormData({ ...formData, labelKey: e.target.value })}
@@ -255,18 +234,19 @@ const Creatives: React.FC = () => {
               placeholder="Order"
               className="border p-2 rounded"
               value={formData.order}
-              onChange={(e) => setFormData({ ...formData, order: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, order: Number(e.target.value) }) // ✅ FIXED HERE TOO
+              }
             />
 
             <input
               type="text"
-              placeholder="Folder (fashion, kids, decor...)"
+              placeholder="Folder"
               className="border p-2 rounded"
               value={formData.folder}
               onChange={(e) => setFormData({ ...formData, folder: e.target.value })}
             />
 
-            {/* TRANSLATION FIELDS */}
             <input
               type="text"
               placeholder="Title (FR)"
@@ -291,7 +271,6 @@ const Creatives: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, en: e.target.value })}
             />
 
-            {/* BUTTONS */}
             <div className="flex gap-4">
               <button
                 onClick={handleSave}
