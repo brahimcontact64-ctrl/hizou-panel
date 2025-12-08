@@ -1,9 +1,9 @@
 // ============================================
-//  DesignItems.tsx — FINAL FULLY EDITABLE VERSION
+//  DesignItems.tsx — FINAL FIXED & WORKING VERSION
 // ============================================
 
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
 
 import {
   collection,
@@ -12,6 +12,8 @@ import {
   orderBy,
   doc,
   updateDoc,
+  addDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 import {
@@ -23,7 +25,7 @@ import {
 } from "firebase/storage";
 
 import { db, storage } from "../services/firebase";
-import { ArrowLeft, Trash2, Upload, Save } from "lucide-react";
+import { ArrowLeft, Trash2, Upload, Save, Plus } from "lucide-react";
 
 // ---------------------
 // Types
@@ -92,7 +94,6 @@ export default function DesignItems() {
         try {
           const files = await listAll(folderRef);
           const urls = await Promise.all(files.items.map((i) => getDownloadURL(i)));
-
           result[item.id] = urls;
         } catch {
           result[item.id] = [];
@@ -101,6 +102,39 @@ export default function DesignItems() {
     );
 
     setImagesByItem(result);
+  };
+
+  // --------------------------------
+  // Add New Item
+  // --------------------------------
+  const addNewItem = async () => {
+    if (!sectionId) return;
+
+    await addDoc(collection(db, "designSections", sectionId, "items"), {
+      labelKey: `design.item.${Date.now()}`,
+      label: { fr: "Nouveau", ar: "جديد", en: "New" },
+      galleryKey: `gallery_${Date.now()}`,
+      order: items.length + 1,
+    });
+
+    loadItems();
+  };
+
+  // --------------------------------
+  // Delete Item + its images
+  // --------------------------------
+  const deleteItem = async (item: DesignItem) => {
+    if (!window.confirm("Delete this item and all its images?")) return;
+
+    try {
+      const folderRef = ref(storage, `images/design/${item.galleryKey}`);
+      const list = await listAll(folderRef);
+      await Promise.all(list.items.map((i) => deleteObject(i)));
+    } catch {}
+
+    await deleteDoc(doc(db, "designSections", sectionId!, "items", item.id));
+
+    loadItems();
   };
 
   // --------------------------------
@@ -153,13 +187,30 @@ export default function DesignItems() {
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Design Sections
       </Link>
 
-      <h1 className="text-2xl font-bold mb-6">Items of {sectionId}</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Items of {sectionId}</h1>
+
+        <button
+          onClick={addNewItem}
+          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-xl"
+        >
+          <Plus size={18} /> Add Item
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {items.map((item) => (
           <div key={item.id} className="bg-white p-5 shadow rounded-2xl">
 
-            {/* Editable Label FR */}
+            {/* Delete Item Button */}
+            <button
+              onClick={() => deleteItem(item)}
+              className="text-red-600 hover:text-red-800 float-right"
+            >
+              <Trash2 />
+            </button>
+
+            {/* Label FR */}
             <div className="mb-4">
               <label className="font-semibold">Name (FR):</label>
               <input
@@ -177,7 +228,7 @@ export default function DesignItems() {
               />
             </div>
 
-            {/* Editable Label AR */}
+            {/* Label AR */}
             <div className="mb-4">
               <label className="font-semibold">Name (AR):</label>
               <input
@@ -195,7 +246,7 @@ export default function DesignItems() {
               />
             </div>
 
-            {/* Editable Label EN */}
+            {/* Label EN */}
             <div className="mb-4">
               <label className="font-semibold">Name (EN):</label>
               <input
